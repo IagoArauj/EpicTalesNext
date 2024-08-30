@@ -5,9 +5,10 @@ export default interface CampaignInterface {
   id: number;
   title: string;
   description?: string;
-  status: "ongoing" | "completed";
+  status: "ONGOING" | "COMPLETED";
   dungeonMasterId?: number;
   characters?: CharacterInterface[];
   story?: string;
   notes?: NoteInterface[];
+  invite_link?: string;
 }

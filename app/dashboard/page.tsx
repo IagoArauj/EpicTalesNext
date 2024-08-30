@@ -5,39 +5,38 @@ import Button from "../components/ui/Button";
 import ChatLine from "../components/ui/ChatLine";
 import { playfair } from "../components/ui/fonts";
 import CampaignCard from "../components/ui/CampaignCard";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import Chat from "../components/ui/Chat";
+import ChatMessageInterface from "../components/lib/interfaces/ChatMessageInterface";
+import { api } from "../components/lib/api";
+import { toast } from "react-toastify";
+import CampaignCardMock from "../components/ui/Mocks/CampaignCardMock";
+import CampaignInterface from "../components/lib/interfaces/CampaignInterface";
+import Link from "next/link";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faEye, faPlus } from "@fortawesome/free-solid-svg-icons";
 
 export default function Page() {
-  const campaignsMock = [
-    {
-      id: 1,
-      title: "The Lost Mines of Phandelver",
-      description:
-        "A group of adventurers has been tasked with finding the lost mines of Phandelver.",
-    },
-    {
-      id: 2,
-      title: "The Curse of Strahd"
-    },
-    {
-      id: 3,
-      title: "The Rise of Tiamat",
-      description:
-        "A group of adventurers has been tasked with stopping the dragon queen Tiamat.",
-    },
-  ];
+  const [campaigns, setCampaigns] = useState<CampaignInterface[]>([]);
+  const [messages, setMessages] = useState<ChatMessageInterface[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const squireWelcomeMessage = {
-    user: {
-      name: "Squire, the squire",
-      avatar: "/images/squire.jpeg",
-    },
-    text: "Hi! I'm Squire, your AI companion. I can help you create parts of your campaign, NPCs and more! Do you need help with something?",
-    timestamp: 1722118344339,
-  };
-
-  const [campaigns, setCampaigns] = useState(campaignsMock);
-  const [messages, setMessages] = useState([squireWelcomeMessage]);
+  useEffect(() => {
+    const getCampaigns = async () => {
+      setLoading(true);
+      try {
+        const response = await api.get("/campaigns/ongoing");
+        setCampaigns(response.data);
+      } catch (error) {
+        console.error(error);
+      }
+      setLoading(false);
+    };
+    (async () =>
+      await toast.promise(getCampaigns, {
+        error: "An error occurred while getting your campaigns.",
+      }))();
+  }, []);
 
   return (
     <div className="flex flex-col">
@@ -51,40 +50,41 @@ export default function Page() {
         Your Last Ongoing Campaigns
       </h1>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {campaigns.map((campaign) => (
-          <CampaignCard
-            key={campaign.id}
-            id={campaign.id}
-            title={campaign.title}
-            description={campaign.description}
-          />
-        ))}
+        {loading ? (
+          <>
+            <CampaignCardMock />
+            <CampaignCardMock />
+            <CampaignCardMock />
+          </>
+        ) : (
+          campaigns.map((campaign) => (
+            <CampaignCard
+              key={campaign.id}
+              campaign={campaign}
+            />
+          ))
+        )}
       </div>
 
       <div className="mt-5 w-1/2 mx-auto flex justify-center">
-        <Button type="button" color="primary">
-          See all campaigns
-        </Button>
+        <Link href="/dashboard/campaigns">
+          <Button type="button" color="primaryOutline">
+            <FontAwesomeIcon icon={faEye} className="mr-2" /> See all campaigns
+          </Button>
+        </Link>
+
+        <Link href="/dashboard/campaigns/create">
+          <Button type="button" color="primaryOutline" className="ml-3">
+           <FontAwesomeIcon icon={faPlus} className="mr-2" /> Create a new campaign
+          </Button>
+        </Link>
       </div>
 
-      <h1 className={`text-2xl font-bold select-none mt-7`}>Talk with Squire</h1>
+      <h1 className={`text-2xl font-bold select-none mt-7`}>
+        Talk with Squire
+      </h1>
       <div className="mt-5 w-fill rounded-lg p-3 bg-white/30">
-        {messages.map((message) => (
-          <>
-            <ChatLine key={message.timestamp} message={message} />
-          </>
-        ))}
-
-        <div className="mt-5 flex">
-          <input
-            type="text"
-            className="w-full p-3 bg-white flex-1 rounded-l"
-            placeholder="Type your message..."
-          />
-          <Button type="button" color="primary" className="rounded-l-none rounded-r flex items-center" title="Send Message">
-            <PaperAirplaneIcon className="w-5 mr" />
-          </Button>
-        </div>
+        <Chat messages={messages} setMessages={setMessages} />
       </div>
     </div>
   );

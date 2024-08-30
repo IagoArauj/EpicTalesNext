@@ -13,7 +13,6 @@ export default function Page() {
   const [loginIsInvalid, setLoginIsInvalid] = useState(false);
 
   const handleSubmit = async (values: { email: string; password: string }) => {
-    console.log(values);
     if (values.email === "email@email" && values.password === "password") {
       router.push("/dashboard");
     } else {

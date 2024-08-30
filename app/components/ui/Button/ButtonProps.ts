@@ -4,8 +4,9 @@ export default interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElem
   children: React.ReactNode;
   type: "submit" | "button" | "reset";
   isLoading?: boolean;
-  color?: "primary" | "primaryOutline" | "secondary" | "secondaryOutline" | "tertiary" | "custom";
+  color?: "primary" | "primaryOutline" | "secondary" | "secondaryOutline" | "tertiary" | "gray" | "custom";
   className?: string;
   disabled?: boolean;
   xl?: boolean;
+  loadingSpinnerClassName?: string;
 }

@@ -53,7 +53,6 @@ export default function NavMenu() {
           EpicTales
         </h1>
         {routes.map((route, idx) => {
-          console.log(route.href, pathname, route.href.startsWith(pathname));
           return (
             <a
               key={idx}
@@ -64,7 +63,7 @@ export default function NavMenu() {
                   : "text-white hover:bg-slate-600 hover:text-white"
               } p-3 text-sm  transition`}
             >
-              <FontAwesomeIcon icon={route.icon} />
+              <FontAwesomeIcon className="h-6" icon={route.icon} />
               {route.name}
             </a>
           );
@@ -77,7 +76,7 @@ export default function NavMenu() {
               : "text-white hover:bg-slate-600 hover:text-white"
           } p-3 text-sm  transition`}
         >
-          <CogIcon className="w-5" />
+          <CogIcon className="h-6" />
           Settings
         </a>
       </nav>
