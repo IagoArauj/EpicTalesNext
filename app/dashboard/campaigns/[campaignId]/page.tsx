@@ -5,18 +5,15 @@ import Button from "@/app/components/ui/Button";
 import Lottie from "react-lottie";
 import { playfair } from "@/app/components/ui/fonts";
 import animationData from "@/app/components/ui/lotties/BookSearch.json";
-import {
-  faArrowLeft,
-  faCopy,
-} from "@fortawesome/free-solid-svg-icons";
+import { faArrowLeft, faCopy } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { api } from "@/app/components/lib/api";
+import LoadingCampaign from "@/app/components/ui/Mocks/LoadingCampaign";
 
 export default function Page({ params }: { params: { campaignId: string } }) {
   const [campaign, setCampaign] = useState<CampaignInterface | undefined>();
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
   useEffect(() => {
@@ -33,49 +30,11 @@ export default function Page({ params }: { params: { campaignId: string } }) {
         console.error(error);
         setError(true);
       }
-
-      setLoading(false);
     })();
   }, [params.campaignId]);
 
-  return error ? (
-    <div className="w-full h-full flex justify-center items-center">
-      <div className="bg-white/50 overflow-hidden rounded-lg text-center">
-        <p className="mt-[-100px]"></p>
-        <Lottie
-          options={{
-            animationData: animationData,
-            loop: true,
-            autoplay: true,
-            rendererSettings: {
-              preserveAspectRatio: "xMidYMid slice",
-              className: "cursor-default",
-            },
-          }}
-          isClickToPauseDisabled={true}
-        />
-        <p className="mt-[-100px] mb-5">An error occurred...</p>
-      </div>
-    </div>
-  ) : loading ? (
-    <div className="w-full h-full flex justify-center items-center">
-      <div className="bg-white/50 overflow-hidden rounded-lg text-center">
-        <p className="mt-[-100px]"></p>
-        <Lottie
-          options={{
-            animationData: animationData,
-            loop: true,
-            autoplay: true,
-            rendererSettings: {
-              preserveAspectRatio: "xMidYMid slice",
-              className: "cursor-default",
-            },
-          }}
-          isClickToPauseDisabled={true}
-        />
-        <p className="mt-[-100px] mb-5">Finding your campaign...</p>
-      </div>
-    </div>
+  return !campaign ? (
+    <LoadingCampaign error={error} />
   ) : (
     <>
       <div className="flex flex-col">
@@ -96,9 +55,7 @@ export default function Page({ params }: { params: { campaignId: string } }) {
           <h2 className={`text-2xl mb-5 text-center ${playfair.className}`}>
             Description
           </h2>
-          <p
-            className={`text-center`}
-          >
+          <p className={`text-center`}>
             {campaign?.description || "No description available"}
           </p>
         </div>

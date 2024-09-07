@@ -40,7 +40,7 @@ export default function Chat(props: ChatProps) {
         try {
           const response = await api.post("/aimodule/generate-response/", {
             user_input:
-              'Hi! Who are you? Respond in 100 characters without start and end "',
+              'Hi!',
             temperature: temperature,
             model_name: model,
           });

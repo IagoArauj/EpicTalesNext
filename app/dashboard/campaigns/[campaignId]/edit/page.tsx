@@ -1,6 +1,6 @@
 "use client";
 
-import CampaignInterface from "@/app/components/lib/interfaces/CampaignInterface";
+import { api } from "@/app/components/lib/api";
 import ChatMessageInterface from "@/app/components/lib/interfaces/ChatMessageInterface";
 import Button from "@/app/components/ui/Button";
 import Chat from "@/app/components/ui/Chat";
@@ -10,36 +10,79 @@ import Select from "@/app/components/ui/Select";
 import TextBox from "@/app/components/ui/TextBox";
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { Formik } from "formik";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
+import * as Yup from "yup";
+import { useRouter } from "next/navigation";
+import CampaignInterface from "@/app/components/lib/interfaces/CampaignInterface";
+import LoadingCampaign from "@/app/components/ui/Mocks/LoadingCampaign";
 
 export default function Page({ params }: { params: { campaignId: string } }) {
   const [messages, setMessages] = useState<ChatMessageInterface[]>([]);
-  const [campaign, setCampaign] = useState<CampaignInterface | undefined>();
-  const [loading, setLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const chatRef = useRef<HTMLDivElement | null>(null);
+  const [chatHeight, setChatHeight] = useState<string | undefined>(undefined);
+  const [campaign, setCampaign] = useState<CampaignInterface | undefined>();
+  const [error, setError] = useState(false);
 
-  useEffect(() => {}, []);
+  const router = useRouter();
 
-  const handleSaveChanges = async () => {
+  useEffect(() => {
+    if (chatRef.current) setChatHeight(`${chatRef.current?.clientHeight}px`);
+  }, [chatRef.current?.clientHeight]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const response = await api.get(`/campaigns/${params.campaignId}`);
+        if (response.status !== 200) {
+          setError(true);
+          return;
+        }
+        setCampaign(response.data);
+        console.log(response.data);
+      } catch (error) {
+        console.error(error);
+        setError(true);
+      }
+    }
+    )();
+  }, [params.campaignId]);
+
+  const campaignSchema = Yup.object().shape({
+    title: Yup.string().required("Title is required"),
+    description: Yup.string().required("Description is required"),
+    status: Yup.string().required("Status is required"),
+    story: Yup.string().required("Story is required"),
+  });
+
+  const handleSubmit = async (values: any) => {
     setIsSaving(true);
-    const resolveAfter3Sec = new Promise((resolve) =>
-      setTimeout(resolve, 3000)
+    const response = await toast.promise(
+      api.put(`campaigns/${campaign?.id}/`, values),
+      {
+        pending: "Saving changes...",
+        success: "Changes saved successfully!\nRedirecting...",
+        error: "An error occurred while saving changes.",
+      }
     );
-    await toast.promise(resolveAfter3Sec, {
-      pending: "Saving changes...",
-      success: "Changes saved successfully!",
-      error: "An error occurred while saving changes.",
-    });
+
+    if (response?.status === 200) {
+      console.log(response.data);
+      router.push(`/dashboard/campaigns/${response.data.id}`);
+    }
     setIsSaving(false);
   };
 
-  return (
+  return !campaign ? (
+    <LoadingCampaign error={error} />
+  ) : (
     <div className="flex flex-col space-y-4">
       <div className="relative">
         <Link
-          href={`/dashboard/campaigns/${params.campaignId}`}
+          href={`/dashboard/campaigns`}
           className="h-fit absolute top-0 left-0"
         >
           <Button type="button" color="primaryOutline">
@@ -49,76 +92,117 @@ export default function Page({ params }: { params: { campaignId: string } }) {
         <h1
           className={`text-center text-4xl ${playfair.className} text-red-900 select-none`}
         >
-          Edit Campaign
+          Editing Campaign #{campaign?.id}
         </h1>
       </div>
 
-      <div className="flex gap-3">
-        <div className="bg-white/30 flex flex-col rounded-lg w-8/12">
-          <div className="bg-white/60 p-4 flex items-center justify-between rounded-t-lg">
-            <h2 className="text-xl font-bold">Campaign Details</h2>
-          </div>
+      <Formik
+        initialValues={campaign}
+        onSubmit={async (values, { setSubmitting }) => {
+          setSubmitting(true);
+          await handleSubmit(values);
+          setSubmitting(false);
+        }}
+        validationSchema={campaignSchema}
+        validateOnChange={true}
+        validateOnBlur={true}
+      >
+        {({
+          values,
+          handleChange,
+          handleSubmit,
+          errors,
+          isSubmitting,
+          touched,
+        }) => (
+          <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+            <div className="flex gap-3">
+              <div className="bg-white/30 flex flex-col rounded-lg w-8/12">
+                <div className="bg-white/60 p-4 flex items-center justify-between rounded-t-lg">
+                  <h2 className="text-xl font-bold">Campaign Details</h2>
+                </div>
 
-          <div className="p-4">
-            <div className="flex flex-col space-y-4">
-              <Input value={campaign?.title} type="text" label="Title" />
-              <Input
-                value={campaign?.description}
-                type="text"
-                label="Description"
-              />
-              <Select
-                value={campaign?.status}
-                options={[
-                  { value: "ongoing", label: "Ongoing" },
-                  { value: "completed", label: "Completed" },
-                ]}
-                label="Campaign Status"
-              />
-              <Input
-                value={`https://epictales.com/i/${campaign?.inviteHash}`}
-                type="text"
-                label="Invite Hash"
-                readOnly
-                title="This is the invite hash for your campaign and it's generated automatically. Share this with your players to invite them to your campaign."
+                <div className="p-4">
+                  <Input
+                    id="title"
+                    type="text"
+                    label="Title"
+                    value={values.title}
+                    onChange={handleChange}
+                    errors={errors.title && touched.title ? errors.title : ""}
+                  />
+                  <TextBox
+                    id="description"
+                    label="Description"
+                    value={values.description}
+                    onChange={handleChange}
+                    errors={
+                      errors.description && touched.description
+                        ? errors.description
+                        : ""
+                    }
+                  />
+                  <Select
+                    id="status"
+                    options={[
+                      { value: "ONGOING", label: "Ongoing" },
+                      { value: "COMPLETED", label: "Completed" },
+                    ]}
+                    label="Campaign Status"
+                    value={values.status}
+                    onChange={handleChange}
+                    errors={
+                      errors.status && touched.status ? errors.status : ""
+                    }
+                  />
+                  <Input
+                    value={`This field will be automatically generated once you create your campaign.`}
+                    type="text"
+                    label="Invite Hash"
+                    readOnly
+                    title="This is the invite hash for your campaign and it's generated automatically. Share this with your players to invite them to your campaign."
+                  />
+                </div>
+              </div>
+
+              <div className={`bg-white/30 flex flex-col rounded-lg w-4/12`}>
+                <div className="bg-white/60 p-4 flex items-center justify-between rounded-t-lg">
+                  <h2 className="text-xl font-bold">Squire</h2>
+                </div>
+
+                <div ref={chatRef} className="flex-1">
+                  <Chat messages={messages} setMessages={setMessages} />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white/30 flex flex-col rounded-lg">
+              <div className="bg-white/60 p-4 flex items-center justify-between rounded-t-lg">
+                <h2 className="text-xl font-bold">Campaign Story</h2>
+              </div>
+              <TextBox
+                id="story"
+                rows={10}
+                className="rounded-none rounded-b-lg bg-white text-justify"
+                value={values.story}
+                onChange={handleChange}
+                errors={errors.story && touched.story ? errors.story : ""}
               />
             </div>
-          </div>
-        </div>
 
-        <div className="bg-white/30 flex flex-col rounded-lg w-4/12">
-          <div className="bg-white/60 p-4 flex items-center justify-between rounded-t-lg">
-            <h2 className="text-xl font-bold">Squire</h2>
-          </div>
-
-          <div className="p-2 flex-1">
-            <Chat messages={messages} setMessages={setMessages} />
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white/30 flex flex-col rounded-lg">
-        <div className="bg-white/60 p-4 flex items-center justify-between rounded-t-lg">
-          <h2 className="text-xl font-bold">Campaign Story</h2>
-        </div>
-        <TextBox
-          value={campaign?.story}
-          rows={20}
-          className="rounded-none rounded-b-lg bg-white text-justify"
-        />
-      </div>
-
-      <div className="flex">
-        <Button
-          onClick={handleSaveChanges}
-          className="w-[100%]"
-          type="button"
-          color="primary"
-          isLoading={isSaving}
-        >
-          Save Changes
-        </Button>
-      </div>
+            <div className="flex">
+              <Button
+                className="w-[100%]"
+                type="submit"
+                color="primary"
+                isLoading={isSaving}
+              >
+                Save Campaign
+              </Button>
+            </div>
+          </form>
+        )}
+      </Formik>
     </div>
   );
 }
