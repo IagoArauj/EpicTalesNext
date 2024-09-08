@@ -5,16 +5,25 @@ import Button from "@/app/components/ui/Button";
 import Lottie from "react-lottie";
 import { playfair } from "@/app/components/ui/fonts";
 import animationData from "@/app/components/ui/lotties/BookSearch.json";
-import { faArrowLeft, faCopy } from "@fortawesome/free-solid-svg-icons";
+import {
+  faArrowLeft,
+  faCopy,
+  faTrashCan,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api } from "@/app/components/lib/api";
 import LoadingCampaign from "@/app/components/ui/Mocks/LoadingCampaign";
+import NoteInterface from "@/app/components/lib/interfaces/NoteInterface";
+import { toast } from "react-toastify";
 
 export default function Page({ params }: { params: { campaignId: string } }) {
   const [campaign, setCampaign] = useState<CampaignInterface | undefined>();
   const [error, setError] = useState(false);
+  const [addNote, setAddNote] = useState(false);
+  const [noteContent, setNoteContent] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -31,7 +40,61 @@ export default function Page({ params }: { params: { campaignId: string } }) {
         setError(true);
       }
     })();
-  }, [params.campaignId]);
+  }, []);
+
+  const saveNote = async () => {
+    try {
+      setIsSaving(true);
+      const response = await toast.promise(
+        api.post(`/campaigns/${params.campaignId}/notes/create/`, {
+          content: noteContent,
+        }),
+        {
+          pending: "Saving...",
+          success: "Note saved successfully",
+          error: "An error occurred. Please try again",
+        }
+      );
+
+      setCampaign((prev) => {
+        if (!prev) return prev;
+
+        const notes = prev.notes || [];
+        notes.push(response.data);
+        console.log(notes);
+
+        return { ...prev, notes };
+      });
+      setNoteContent("");
+    } catch (error) {
+      console.error(error);
+    }
+    setIsSaving(false);
+  };
+
+  const deleteNote = useCallback(async (note: NoteInterface) => {
+    try {
+      const response = await toast.promise(
+        api.delete(`/campaigns/${params.campaignId}/notes/${note.id}/`),
+        {
+          pending: "Deleting...",
+          success: "Note deleted successfully",
+          error: "An error occurred. Please try again",
+        }
+      );
+
+      setCampaign((prev) => {
+        if (!prev) return prev;
+        const notes = prev.notes || [];
+        const index = notes.findIndex((n) => n.id === note.id);
+        notes.splice(index, 1);
+        console.log(notes);
+        return { ...prev, notes };
+      });
+    } catch (error) {
+      console.error(error);
+    }
+  }, []);
 
   return !campaign ? (
     <LoadingCampaign error={error} />
@@ -144,15 +207,46 @@ export default function Page({ params }: { params: { campaignId: string } }) {
               </h2>
               <Button
                 type="button"
-                color="primary"
-                className="absolute top-0 right-0"
+                color={!addNote ? "primary" : "secondary"}
+                className="absolute top-0 right-0 transition"
+                onClick={() => setAddNote(!addNote)}
               >
-                +
+                {addNote ? "× Cancel" : "+ Add"}
               </Button>
             </div>
-            {campaign?.notes ? (
+            {addNote && (
+              <div className="bg-white/30 rounded-lg mb-3">
+                <textarea
+                  className="w-full p-3 bg-transparent rounded-lg"
+                  placeholder="Add a note..."
+                  value={noteContent}
+                  onChange={(e) => setNoteContent(e.target.value)}
+                ></textarea>
+                <Button
+                  type="button"
+                  color="primary"
+                  className="w-full"
+                  onClick={saveNote}
+                  isLoading={isSaving}
+                >
+                  Save Note
+                </Button>
+              </div>
+            )}
+            {campaign?.notes && campaign?.notes?.length > 0 ? (
               campaign?.notes?.map((note) => (
-                <div key={note.id} className="bg-white/30 p-3 rounded-lg mb-3">
+                <div
+                  key={note.id}
+                  className="bg-white/30 p-3 rounded-lg mb-3 relative"
+                >
+                  <Button
+                    type="button"
+                    color="secondary"
+                    className="absolute top-2 right-2"
+                    onClick={() => deleteNote(note)}
+                  >
+                    <FontAwesomeIcon icon={faTrashCan} />
+                  </Button>
                   <p>{note.content}</p>
                 </div>
               ))
