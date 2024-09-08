@@ -65,14 +65,14 @@ export default function Chat(props: ChatProps) {
 
       welcomeMessage();
     }
-  }, []);
+  }, [model, temperature, props.messages, props.setMessages]);
 
   useEffect(() => {
     if (debouncedTemperature != null && debouncedTemperature !== temperature) {
       setTemperature(debouncedTemperature);
       toast.info(`Model's temperature set to ${debouncedTemperature}`);
     }
-  }, [debouncedTemperature]);
+  }, [debouncedTemperature, setTemperature, temperature]);
 
   const sendMessage = async (e: any) => {
     e.preventDefault();

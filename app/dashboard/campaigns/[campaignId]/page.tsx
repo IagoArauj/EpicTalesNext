@@ -40,7 +40,7 @@ export default function Page({ params }: { params: { campaignId: string } }) {
         setError(true);
       }
     })();
-  }, []);
+  }, [params.campaignId]);
 
   const saveNote = async () => {
     try {
@@ -94,7 +94,7 @@ export default function Page({ params }: { params: { campaignId: string } }) {
     } catch (error) {
       console.error(error);
     }
-  }, []);
+  }, [params.campaignId]);
 
   return !campaign ? (
     <LoadingCampaign error={error} />

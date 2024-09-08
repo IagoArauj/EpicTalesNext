@@ -14,7 +14,7 @@ export default function ChatLineMock() {
       </div>
       <div>
         <h3>Squire, the squire </h3>
-        <img src="/svg/Loading_Dots.svg" className="h-[2rem] w-auto" />
+        <Image alt="Loading..." src="/svg/Loading_Dots.svg" className="h-[2rem] w-auto" />
       </div>
     </div>
   );

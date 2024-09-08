@@ -28,7 +28,7 @@ export default function LoadingCampaign({error}: {error: boolean}) {
               height={200}
               width={200}
             />
-            <p className="mt-5 text-red-900 font-bold">The squire couldn't find this campaign</p>
+            <p className="mt-5 text-red-900 font-bold">The squire couldn&apos;t find this campaign</p>
             <Link href="/dashboard/campaigns">
               <Button color="primary" type="button" className="w-[100%] mt-3">Go back</Button>
             </Link>
